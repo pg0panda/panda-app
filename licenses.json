@@ -312,7 +312,11 @@
   {
     "key": "PANDA",
     "durationDays": -1,
-    "comment": "اشتراك مدى الحياة"
+    "comment": "اشتراك مدى الحياة",
+    "activationDate": "2025-09-08T13:54:05.402Z",
+    "expiryDate": "Lifetime",
+    "hwid": "90da88182b66c6bb9303dc4377d9946816cc44dc5fba98ed2ce81c1f901204d5",
+    "macAddress": "ec:b1:d7:2c:09:9e"
   },
   {
     "key": "SHIKO",
