@@ -1,0 +1,83 @@
+name: Decrypt Config & Deploy to Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/.env.encrypted'
+
+jobs:
+  decrypt-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Decrypt Config
+        env:
+          ENCRYPTED_FILE: src/.env.encrypted
+          MASTER_PASSWORD: ${{ secrets.MASTER_PASSWORD }}
+          DECRYPTED_OUTPUT: config-decrypted.json
+        run: |
+          node -e "
+          const crypto = require('crypto');
+          const fs = require('fs');
+          
+          function deriveKey(password, salt) {
+              return crypto.scryptSync(password, salt, 32);
+          }
+          
+          function decrypt(base64Data, password) {
+              const buf = Buffer.from(base64Data, 'base64');
+              const salt = buf.subarray(0, 16);
+              const iv = buf.subarray(16, 32);
+              const encrypted = buf.subarray(32);
+              
+              const key = deriveKey(password, salt);
+              const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+              
+              const decrypted = Buffer.concat([
+                  decipher.update(encrypted),
+                  decipher.final()
+              ]);
+              
+              return JSON.parse(decrypted.toString('utf8'));
+          }
+          
+          const encrypted = fs.readFileSync(process.env.ENCRYPTED_FILE, 'utf8').trim();
+          const decrypted = decrypt(encrypted, process.env.MASTER_PASSWORD);
+          
+          fs.writeFileSync(process.env.DECRYPTED_OUTPUT, JSON.stringify(decrypted, null, 2));
+          console.log('✅ تم فك التشفير بنجاح');
+          "
+      
+      - name: Upload to Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "config-decrypted.json"
+          tag: "config-${{ github.run_number }}"
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Cleanup
+        run: rm -f config-decrypted.json
+
+      - name: Comment on Commit
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ تم فك التشفير وتحميل الملف في **Release** - اضغط [هنا](https://github.com/${{ github.repository }}/releases/tag/config-${{ github.run_number }}) للتحميل'
+            })
