@@ -65,7 +65,6 @@ jobs:
         with:
           artifacts: "config-decrypted.json"
           tag: "config-${{ github.run_number }}"
-          bodyFile: ".github/RELEASE_BODY.md"
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}
       
