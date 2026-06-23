@@ -1,7 +1,7 @@
 name: Decrypt Config & Deploy to Release
 
 on:
-  workflow_dispatch:  # يدويًا من GitHub UI
+  workflow_dispatch:
   push:
     branches:
       - main
